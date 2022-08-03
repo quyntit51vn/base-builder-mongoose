@@ -1,2 +1,10 @@
-.vscode
-node_modules/
+node_modules
+.env
+
+#build
+build
+
+#yarn
+yarn.lock
+
+package-lock.json
