@@ -9,8 +9,8 @@ export const connectMongoDb = () => {
               keepAlive: true,
               useUnifiedTopology: true,
               useNewUrlParser: true,
-              useCreateIndex: true,
-              useFindAndModify: false
+              // useCreateIndex: true,
+              // useFindAndModify: false
             } as ConnectOptions,
             (err) => {
               let dbStatus = '';

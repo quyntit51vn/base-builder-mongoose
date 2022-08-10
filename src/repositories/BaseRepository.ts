@@ -1,11 +1,19 @@
 // interface write and Read DB
-import { NotFoundError, QueryDBError } from '../base/custom-error';
-import mongoose from 'mongoose';
+import { NotFoundError, QueryDBError } from "../base/custom-error";
+import mongoose, { Model } from "mongoose";
+import { query } from "express-validator";
 
-const ObjectId = mongoose.Types.ObjectId;
+export declare type Op = "$eq" | "$in";
 
+export declare type singleOperator<T> = {
+  [key in Op]?: {
+    [name in keyof T]?: any;
+  };
+};
+
+export declare type QueryCondition<T> = singleOperator<T>;
 export abstract class BaseRepository<T> {
-  protected model;
+  protected model!: Model<T>;
   //we created constructor with arguments to manipulate mongodb operations
 
   setModel(model) {
@@ -16,25 +24,31 @@ export abstract class BaseRepository<T> {
     return this.model;
   }
 
-  find(item: any): Promise<T[]> {
-    return this.model.find(item);
+  async find(item: any): Promise<T[]> {
+    return await this.model.find(item);
   }
 
-  populate(relate: string): Promise<T[]> {
-    return this.model.populate(relate);
+  get(query, selects, paginate = null) {
+    // ép kiểu dữ kiệu cho các param này
+    if (paginate) this.paginate;
+    else this.model.find(query).select(selects);
   }
 
-  findOne(item: any): Promise<T[]> {
-    return this.model.findOne(item);
+  // async populate(relate: string): Promise<T[]> {
+  //   return await this.model.populate(relate) as T[];
+  // }
+
+  async findOne(query: QueryCondition<T>): Promise<T> {
+    return await this.model.findOne(query);
   }
 
-  findOneAndUpdate(filter: any, item: any): Promise<T[]> {
+  async findOneAndUpdate(filter: any, item: any): Promise<T[]> {
     return this.model.findOneAndUpdate(filter, item, {
       new: true,
     });
   }
 
-  async findById(id: string) {
+  async findById(id: string): Promise<T> {
     try {
       return await this.model.findById(id);
     } catch (error) {
@@ -46,7 +60,7 @@ export abstract class BaseRepository<T> {
     try {
       const result = await this.findOne(item);
       if (!result) {
-        throw new NotFoundError('Database Error: Không tìm thấy');
+        throw new NotFoundError("Database Error: Không tìm thấy");
       }
       return result;
     } catch (error: any) {
@@ -69,7 +83,7 @@ export abstract class BaseRepository<T> {
    * if findItem = null then find by _id in item
    */
   async createOrUpdate(item: any, findItem: any = null): Promise<T> {
-    let checkExist = await this.findById(item._id);
+    let checkExist: any = await this.findById(item._id);
     if (findItem) {
       checkExist = await this.findOne(findItem);
     }
@@ -91,7 +105,7 @@ export abstract class BaseRepository<T> {
   async update(id: string, item: any): Promise<T> {
     const model = await this.findById(id);
     if (!model) {
-      throw new NotFoundError('Database Error: Không tìm thấy');
+      throw new NotFoundError("Database Error: Không tìm thấy");
     }
     return await this.model.findByIdAndUpdate(id, item, {
       new: true,
@@ -101,7 +115,7 @@ export abstract class BaseRepository<T> {
   async delete(id: string): Promise<boolean> {
     const model = await this.findById(id);
     if (!model) {
-      throw new NotFoundError('Database Error: Không tìm thấy');
+      throw new NotFoundError("Database Error: Không tìm thấy");
     }
     return await this.model.findByIdAndDelete(id);
   }
@@ -117,11 +131,20 @@ export abstract class BaseRepository<T> {
   }
 
   async count(filter = {}) {
-    return this.model.find(filter).count();
+    return this.model.count(filter);
   }
 
-  async insertMany(items: any): Promise<T> {
-    return await this.model.insertMany(items);
+  async paginate(query: any, paginate) {
+    let total = await this.count(query);
+    let data = this.find({
+      ...query,
+      limit: paginate.limit,
+      skip: paginate.page * paginate.limit,
+    });
+    return {
+      total: total,
+      data: data,
+    };
   }
 }
 
@@ -129,7 +152,7 @@ export class BaseQueryHelper {
   public static fieldSearch = (keyword, fieldName) => {
     const keywordMatch = [
       {
-        [fieldName]: { $regex: `${keyword}`, $options: 'gi' },
+        [fieldName]: { $regex: `${keyword}`, $options: "gi" },
       },
     ];
     return {

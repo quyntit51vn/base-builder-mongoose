@@ -1,17 +1,19 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import logger from "morgan";
-import mainJob from "./service/cronjob/index";
+import mainJob from "./src/services/cronjob/index";
+import index from './src/routes/index';
+import {connectMongoDb} from "./src/base/connection/mongo";
 
 const app = express();
-
+const PORT = process.env.PORT || 3009;
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-
+connectMongoDb();
 // error handler
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development
@@ -22,7 +24,9 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+app.use('/', index);
 
+app.listen(PORT);
 
 mainJob();
 
