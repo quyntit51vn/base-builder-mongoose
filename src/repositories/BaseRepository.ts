@@ -2,16 +2,10 @@
 import { NotFoundError, QueryDBError } from "../base/custom-error";
 import mongoose, { Model } from "mongoose";
 import { query } from "express-validator";
+import { QueryCondition } from "./queries/query";
 
 export declare type Op = "$eq" | "$in";
 
-export declare type singleOperator<T> = {
-  [key in Op]?: {
-    [name in keyof T]?: any;
-  };
-};
-
-export declare type QueryCondition<T> = singleOperator<T>;
 export abstract class BaseRepository<T> {
   protected model!: Model<T>;
   //we created constructor with arguments to manipulate mongodb operations

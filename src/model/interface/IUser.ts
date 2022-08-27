@@ -1,8 +1,9 @@
+import mongoose from "mongoose";
+
 export interface IUser {
-    _id: string,
-    first_name: string,
-    last_name: string,
+    _id?:  mongoose.Types.ObjectId,
+    firstName: string,
+    lastName: string,
     email: string,
     password: string,
-    token: string,
 }
